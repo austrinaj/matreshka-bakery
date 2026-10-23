@@ -6,11 +6,15 @@ import db
 from tg import admin_ids, api
 
 # Логика бота. handle_update() получает одно событие от Telegram
-# (сообщение или нажатие кнопки) и отвечает на него.
+# (сообщение или нажатие кнопки) и возвращает ОДИН ответ — словарь вида
+# {"method": "sendMessage", "chat_id": ..., "text": ...}
 #
-# На хостинге события присылает сам Telegram на сайт (вебхук, см. app.py).
+# Почему один ответ: на хостинге (вебхук, см. app.py) мы отдаём его Telegram
+# прямо в ответе на его запрос. Так серверу не нужно самому подключаться
+# к Telegram (на бесплатном PythonAnywhere это заблокировано).
+#
 # На своём компьютере можно запустить `python bot.py`: тогда бот сам
-# спрашивает Telegram о новых сообщениях (polling).
+# спрашивает Telegram о новых сообщениях (polling) и отправляет ответы.
 
 HELP = (
     "🥐 CRM пекарни «Матрёшка»\n\n"
@@ -22,18 +26,45 @@ HELP = (
 )
 
 
-def status_keyboard(order_id):
-    """Кнопки под заказом: сменить статус в один клик. По 2 кнопки в ряд."""
+def send(chat_id, text, keyboard=None):
+    answer = {"method": "sendMessage", "chat_id": chat_id, "text": text}
+    if keyboard:
+        answer["reply_markup"] = keyboard
+    return answer
+
+
+def edit(message, text, keyboard=None):
+    """Заменить текст и кнопки у уже отправленного сообщения."""
+    answer = {"method": "editMessageText", "chat_id": message["chat"]["id"],
+              "message_id": message["message_id"], "text": text}
+    if keyboard:
+        answer["reply_markup"] = keyboard
+    return answer
+
+
+def order_keyboard(order_id):
+    """Кнопки под заказом: статусы по 2 в ряд и «назад к списку»."""
     buttons = [
         {"text": label, "callback_data": f"st:{order_id}:{key}"}
         for key, label in db.STATUSES.items()
     ]
-    return {"inline_keyboard": [buttons[i:i + 2] for i in range(0, len(buttons), 2)]}
+    rows = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+    rows.append([{"text": "← К списку заказов", "callback_data": "list"}])
+    return {"inline_keyboard": rows}
 
 
-def send_order(chat_id, order):
-    api("sendMessage", chat_id=chat_id, text=db.format_order(order),
-        reply_markup=status_keyboard(order["id"]))
+def active_orders_view():
+    """Текст и кнопки для списка активных заказов."""
+    orders = [o for o in db.get_orders() if o["status"] in ("new", "in_work", "ready")]
+    if not orders:
+        return "Активных заказов нет 🎉", None
+    text = "📋 Активные заказы:\n\n" + "\n".join(
+        f"№{o['id']} · {o['customer_name']} · {o['total']} ₽ · {db.STATUSES[o['status']]}"
+        for o in orders
+    )
+    buttons = [{"text": f"№{o['id']}", "callback_data": f"open:{o['id']}"} for o in orders]
+    keyboard = {"inline_keyboard": [buttons[i:i + 4] for i in range(0, len(buttons), 4)]}
+    return text, keyboard
 
 
 def handle_message(message):
@@ -42,75 +73,69 @@ def handle_message(message):
     text = message.get("text", "")
     command = text.split()[0].split("@")[0] if text else ""
 
-    def reply(answer):
-        api("sendMessage", chat_id=chat_id, text=answer)
-
     if user_id not in admin_ids():
         # Свой ID нужно вписать в ADMIN_IDS в файле .env
-        reply("Привет! Это CRM пекарни «Матрёшка».\n"
-              f"Доступ только для сотрудников. Твой Telegram ID: {user_id}")
-        return
+        return send(chat_id, "Привет! Это CRM пекарни «Матрёшка».\n"
+                             f"Доступ только для сотрудников. Твой Telegram ID: {user_id}")
 
     if command == "/orders":
-        orders = [o for o in db.get_orders() if o["status"] in ("new", "in_work", "ready")]
-        if not orders:
-            reply("Активных заказов нет 🎉")
-        for o in reversed(orders):
-            send_order(chat_id, o)
+        return send(chat_id, *active_orders_view())
 
-    elif command == "/all":
+    if command == "/all":
         orders = db.get_orders(limit=10)
-        reply("\n".join(
+        return send(chat_id, "\n".join(
             f"№{o['id']} · {o['created_at'][5:16]} · {o['customer_name']} · "
             f"{o['total']} ₽ · {db.STATUSES[o['status']]}"
             for o in orders
         ) or "Заказов пока нет")
 
-    elif command == "/order":
+    if command == "/order":
         parts = text.split()
         if len(parts) < 2 or not parts[1].isdigit():
-            reply("Напиши номер: /order 5")
-            return
+            return send(chat_id, "Напиши номер: /order 5")
         order = db.get_order(int(parts[1]))
-        if order:
-            send_order(chat_id, order)
-        else:
-            reply("Такого заказа нет")
+        if not order:
+            return send(chat_id, "Такого заказа нет")
+        return send(chat_id, db.format_order(order), order_keyboard(order["id"]))
 
-    elif command == "/today":
+    if command == "/today":
         count, revenue = db.today_stats()
-        reply(f"📊 Сегодня: {count} заказов на {revenue} ₽")
+        return send(chat_id, f"📊 Сегодня: {count} заказов на {revenue} ₽")
 
-    elif command == "/menu":
-        reply("🥐 Меню:\n" + "\n".join(
+    if command == "/menu":
+        return send(chat_id, "🥐 Меню:\n" + "\n".join(
             f"• {p['name']} ({p['weight']}) — {p['price']} ₽" for p in db.get_products()
         ))
 
-    else:
-        reply(HELP)
+    return send(chat_id, HELP)
 
 
 def handle_callback(callback):
-    """Нажатие на кнопку статуса. callback_data выглядит как "st:5:ready" """
+    """Нажатие на кнопку. callback_data: "open:5", "st:5:ready" или "list" """
+    message = callback["message"]
     if callback["from"]["id"] not in admin_ids():
-        api("answerCallbackQuery", callback_query_id=callback["id"],
-            text="Нет доступа", show_alert=True)
-        return
-    _, order_id, status = callback["data"].split(":")
-    db.set_status(int(order_id), status)
-    order = db.get_order(int(order_id))
-    msg = callback["message"]
-    api("editMessageText", chat_id=msg["chat"]["id"], message_id=msg["message_id"],
-        text=db.format_order(order), reply_markup=status_keyboard(order["id"]))
-    api("answerCallbackQuery", callback_query_id=callback["id"],
-        text=f"Статус: {db.STATUSES[status]}")
+        return {"method": "answerCallbackQuery", "callback_query_id": callback["id"],
+                "text": "Нет доступа", "show_alert": True}
+
+    parts = callback["data"].split(":")
+    if parts[0] == "list":
+        return edit(message, *active_orders_view())
+
+    order_id = int(parts[1])
+    if parts[0] == "st":
+        db.set_status(order_id, parts[2])
+    order = db.get_order(order_id)
+    if not order:
+        return edit(message, "Такого заказа нет")
+    return edit(message, db.format_order(order), order_keyboard(order_id))
 
 
 def handle_update(update):
     if "message" in update:
-        handle_message(update["message"])
-    elif "callback_query" in update:
-        handle_callback(update["callback_query"])
+        return handle_message(update["message"])
+    if "callback_query" in update:
+        return handle_callback(update["callback_query"])
+    return None
 
 
 def polling():
@@ -129,7 +154,10 @@ def polling():
         updates = api("getUpdates", offset=offset, timeout=30) or []
         for update in updates:
             offset = update["update_id"] + 1
-            handle_update(update)
+            answer = handle_update(update)
+            if answer:
+                method = answer.pop("method")
+                api(method, **answer)
 
 
 if __name__ == "__main__":

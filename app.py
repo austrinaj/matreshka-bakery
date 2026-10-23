@@ -3,7 +3,7 @@ from functools import wraps
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, jsonify, redirect, render_template, request, session, url_for
 
 import bot
 import db
@@ -133,8 +133,9 @@ def tg_webhook():
     secret = os.getenv("WEBHOOK_SECRET")
     if not secret or request.headers.get("X-Telegram-Bot-Api-Secret-Token") != secret:
         abort(403)
-    bot.handle_update(request.get_json())
-    return "ok"
+    # Ответ бота отдаём прямо в ответе на запрос Telegram (сервер сам в Telegram не ходит)
+    answer = bot.handle_update(request.get_json())
+    return jsonify(answer or {})
 
 
 if __name__ == "__main__":
