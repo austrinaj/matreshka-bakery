@@ -1,13 +1,16 @@
 import os
 from functools import wraps
+from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 
+import bot
 import db
-from notify import send_to_admins
+from tg import send_to_admins
 
-load_dotenv()
+# Ищем .env рядом с app.py (на хостинге программа запускается из другой папки)
+load_dotenv(Path(__file__).parent / ".env")
 
 app = Flask(__name__)
 # Секретный ключ нужен Flask, чтобы подписывать сессию (вход в CRM)
@@ -120,6 +123,18 @@ def toggle_product(product_id):
 @login_required
 def admin_customers():
     return render_template("admin_customers.html", customers=db.get_customers())
+
+
+# ---------- Telegram-бот (вебхук) ----------
+
+@app.route("/tg-webhook", methods=["POST"])
+def tg_webhook():
+    # Telegram присылает секрет в заголовке: так чужой не сможет притвориться им
+    secret = os.getenv("WEBHOOK_SECRET")
+    if not secret or request.headers.get("X-Telegram-Bot-Api-Secret-Token") != secret:
+        abort(403)
+    bot.handle_update(request.get_json())
+    return "ok"
 
 
 if __name__ == "__main__":
