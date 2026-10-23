@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}CRM — Матрёшка{% endblock %}
+{% block body %}
+<nav class="admin-nav">
+    <strong>CRM «Матрёшка»</strong>
+    <a href="{{ url_for('admin_orders') }}">Заказы</a>
+    <a href="{{ url_for('admin_products') }}">Меню</a>
+    <a href="{{ url_for('admin_customers') }}">Клиенты</a>
+    <a href="{{ url_for('index') }}">Сайт</a>
+    <a href="{{ url_for('logout') }}">Выйти</a>
+</nav>
+<main class="container">
+    {% block content %}{% endblock %}
+</main>
+{% endblock %}

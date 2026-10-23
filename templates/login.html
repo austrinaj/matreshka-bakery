@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Вход в CRM{% endblock %}
+{% block body %}
+<main class="container center">
+    <h1>CRM «Матрёшка»</h1>
+    <form method="post" class="order-form narrow">
+        <input type="password" name="password" placeholder="Пароль" required autofocus>
+        <button class="button" type="submit">Войти</button>
+    </form>
+</main>
+{% endblock %}

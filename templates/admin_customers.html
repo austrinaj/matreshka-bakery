@@ -1,0 +1,20 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h2>Клиенты</h2>
+<div class="table-wrap">
+<table>
+    <tr><th>Имя</th><th>Телефон</th><th>Заказов</th><th>Потратил</th><th>Последний заказ</th></tr>
+    {% for c in customers %}
+    <tr>
+        <td>{{ c.name }}</td>
+        <td>{{ c.phone }}</td>
+        <td>{{ c.orders_count }}</td>
+        <td>{{ c.total_spent }} ₽</td>
+        <td>{{ c.last_order[:16] }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="muted">Клиентов пока нет</td></tr>
+    {% endfor %}
+</table>
+</div>
+{% endblock %}

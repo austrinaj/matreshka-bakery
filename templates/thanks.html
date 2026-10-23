@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="container center">
+    <h1>Спасибо! 🥐</h1>
+    <p>Ваш заказ №{{ order_id }} принят. Мы скоро свяжемся с вами.</p>
+    <a class="button" href="{{ url_for('index') }}">На главную</a>
+</main>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block body %}
+<header class="hero">
+    <h1>Матрёшка</h1>
+    <p>Пекарня с душой · Белгород, ул. Николая Островского, 29</p>
+    <p class="muted">Ежедневно до 21:00 · кофе с собой · можно с собакой</p>
+    <a class="button" href="#order">Заказать к самовывозу</a>
+</header>
+
+<main class="container">
+    <section>
+        <h2>Меню</h2>
+        <div class="grid">
+            {% for p in products %}
+            <div class="product">
+                <div class="product-img">🥐</div>
+                <h3>{{ p.name }}</h3>
+                <p class="muted">{{ p.weight }}</p>
+                <p class="price">{{ p.price }} ₽</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section id="order">
+        <h2>Оформить заказ</h2>
+        <form method="post" action="{{ url_for('order') }}" class="order-form">
+            <div class="order-items">
+                {% for p in products %}
+                <label class="order-row">
+                    <span>{{ p.name }} — {{ p.price }} ₽</span>
+                    <input type="number" name="qty_{{ p.id }}" min="0" max="50" value="0">
+                </label>
+                {% endfor %}
+            </div>
+            <input name="name" placeholder="Ваше имя" required>
+            <input name="phone" placeholder="Телефон" required>
+            <input name="pickup_time" placeholder="Когда заберёте (например, сегодня в 18:00)">
+            <textarea name="comment" placeholder="Комментарий"></textarea>
+            <button class="button" type="submit">Отправить заказ</button>
+        </form>
+    </section>
+</main>
+
+<footer class="container muted">
+    © Матрёшка · <a href="{{ url_for('admin_orders') }}">Вход для сотрудников</a>
+</footer>
+{% endblock %}

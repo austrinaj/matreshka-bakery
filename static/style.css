@@ -1,0 +1,142 @@
+/* Тёплые «пекарные» цвета */
+:root {
+    --bg: #fbf6ef;
+    --card: #ffffff;
+    --text: #3b2a1e;
+    --muted: #8c7b6b;
+    --accent: #c0392b;   /* красный, как у матрёшки */
+    --border: #eadfd2;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+a { color: var(--accent); }
+.muted { color: var(--muted); }
+.center { text-align: center; padding-top: 60px; }
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+.hero {
+    text-align: center;
+    padding: 60px 16px;
+    background: linear-gradient(#f3e3cf, var(--bg));
+}
+.hero h1 { font-size: 48px; margin: 0 0 8px; }
+
+.button {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+}
+.button:hover { opacity: 0.9; }
+
+/* Сетка карточек меню: на телефоне сама перестроится в 1-2 колонки */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+}
+.product {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+}
+.product-img { font-size: 48px; }
+.product h3 { margin: 8px 0 4px; }
+.product p { margin: 4px 0; }
+.price { font-weight: bold; font-size: 18px; }
+
+/* Формы */
+.order-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 480px;
+}
+.order-form.narrow { margin: 0 auto; max-width: 300px; }
+input, textarea, select {
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font: inherit;
+    background: white;
+}
+.order-items {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 16px;
+}
+.order-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    gap: 12px;
+}
+.order-row input { width: 70px; }
+
+.flash {
+    background: #fff3cd;
+    padding: 12px 16px;
+    text-align: center;
+}
+
+/* ---------- CRM ---------- */
+.admin-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--text);
+    color: white;
+}
+.admin-nav a { color: #f3e3cf; text-decoration: none; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.filters a {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    text-decoration: none;
+    background: white;
+}
+.filters a.active { background: var(--accent); color: white; }
+
+.inline-form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+
+.table-wrap { overflow-x: auto; }   /* на телефоне таблицу можно листать вбок */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+}
+tr.status-new { background: #fff6e0; }
+tr.status-done, tr.status-canceled, tr.disabled { opacity: 0.5; }
